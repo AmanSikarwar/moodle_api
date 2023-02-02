@@ -1,27 +1,29 @@
-import 'package:fpdart/fpdart.dart';
-import 'package:moodle_api/src/models/value_object.dart';
+import 'package:equatable/equatable.dart';
 
-import 'errors/value_error.dart';
+import 'exceptions.dart';
+import '../utils/constants.dart';
 
-class Username extends ValueObject<String> {
-  @override
-  final Either<ValueError<String>, String> value;
-
-  factory Username(String input) {
-    return Username._(
-      validateUsername(input),
-    );
-  }
-
+class Username extends Equatable {
   const Username._(this.value);
 
-  static Either<ValueError<String>, String> validateUsername(
-      String input) {
+  final String value;
+
+  factory Username(String input) =>
+      Username._(_validateUsername(input));
+
+  static String _validateUsername(String input) {
     if (input.length >= 3) {
-      return right(input);
+      return input;
     } else {
-      return left(InvalidUsernameError(
-          'Username must be at least 3 characters'));
+      throw InvalidUsernameError(ErrorMessages.invalidUsername);
     }
   }
+
+  bool get isValid => value.length >= 3;
+
+  @override
+  List<Object?> get props => [value];
+
+  @override
+  String toString() => 'Username(value: $value)';
 }

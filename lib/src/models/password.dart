@@ -1,26 +1,29 @@
-import 'package:fpdart/fpdart.dart';
+import 'package:equatable/equatable.dart';
 
-import 'errors/value_error.dart';
-import 'value_object.dart';
+import 'exceptions.dart';
+import '../utils/constants.dart';
 
-class Password extends ValueObject<String> {
-  @override
-  final Either<ValueError<String>, String> value;
-
-  factory Password(String input) {
-    return Password._(
-      validatePassword(input),
-    );
-  }
+class Password extends Equatable {
   const Password._(this.value);
 
-  static Either<ValueError<String>, String> validatePassword(
-      String input) {
+  final String value;
+
+  factory Password(String input) =>
+      Password._(_validatePassword(input));
+
+  static String _validatePassword(String input) {
     if (input.length >= 6) {
-      return right(input);
+      return input;
     } else {
-      return left(InvalidPasswordError(
-          'Password must be at least 6 characters'));
+      throw InvalidPasswordError(ErrorMessages.invalidPassword);
     }
   }
+
+  bool get isValid => value.length >= 6;
+
+  @override
+  List<Object?> get props => [value];
+
+  @override
+  String toString() => 'Password(value: $value)';
 }

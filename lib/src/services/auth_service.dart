@@ -1,85 +1,86 @@
 import 'dart:convert';
 
-import 'package:fpdart/fpdart.dart';
 import 'package:http/http.dart' as http;
 
+import '../models/base_url.dart';
 import '../models/email.dart';
-import '../models/errors/value_error.dart';
+import '../models/exceptions.dart';
 import '../models/password.dart';
 import '../models/username.dart';
 import '../models/ws_token.dart';
+import '../utils/constants.dart';
 
 class MoodleAuthService {
-  final String baseUrl;
+  final BaseUrl baseUrl;
 
   MoodleAuthService({required this.baseUrl});
 
-  TaskEither<ValueError<String>, WSToken> getWSToken(
-          Username username, Password password) =>
-      TaskEither<ValueError<String>, WSToken>(
-        () async {
-          final response = await http.post(
-            Uri.parse('$baseUrl/login/token.php'),
-            body: {
-              'username': username.getOrCrash(),
-              'password': password.getOrCrash(),
-              'service': 'moodle_mobile_app',
-            },
-          );
-          if (response.statusCode == 200) {
-            if (response.body.contains("token")) {
-              final token = WSToken.fromJson(jsonDecode(response.body));
-              return right(token);
-            } else {
-              return left(
-                  InvalidInputError('Invalid username or password'));
-            }
-          } else {
-            return left(
-                InvalidInputError('Unable to get token from server'));
-          }
-        },
-      );
+  Future<WSToken> getWSToken(
+      Username username, Password password) async {
+    final response = await http.post(
+      Uri.parse('${baseUrl.value}${EndPoints.login}'),
+      body: {
+        'username': username.value,
+        'password': password.value,
+        'service': defaultService,
+      },
+    );
+    switch (response.statusCode) {
+      case HttpStatus.ok:
+        if (response.body.contains("token")) {
+          final token = WSToken.fromJson(jsonDecode(response.body));
+          return token;
+        } else {
+          throw InvalidResponseError('Unable to get token from server');
+        }
+      case HttpStatus.unauthorized:
+        throw InvalidCredentialsError('Invalid username or password');
+      default:
+        throw InvalidResponseError('Unable to get token from server');
+    }
+  }
 
-  TaskEither<ValueError<String>, http.Response> requestPasswordReset(
-          WSToken token, EmailAddress email) =>
-      TaskEither<ValueError<String>, http.Response>(
-        () async {
-          final response = await http.post(
-            Uri.parse('$baseUrl/webservice/rest/server.php'),
-            body: {
-              'wstoken': token.getOrCrash(),
-              'wsfunction': 'core_auth_request_password_reset',
-              'moodlewsrestformat': 'json',
-              'email': email.getOrCrash(),
-            },
-          );
-          if (response.statusCode == 200) {
-            return right(response);
-          } else {
-            return left(InvalidTokenError('Invalid token'));
-          }
-        },
-      );
+  Future<http.Response> requestPasswordReset(
+      WSToken token, EmailAddress email) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl${EndPoints.apiEndpoint}'),
+      body: {
+        'wstoken': token.value,
+        'wsfunction': WSFunctions.coreAuthRequestPasswordReset,
+        'moodlewsrestformat': 'json',
+        'email': email.value,
+      },
+    );
+    switch (response.statusCode) {
+      case HttpStatus.ok:
+        return response;
+      case HttpStatus.unauthorized:
+        throw InvalidCredentialsError('Invalid username or password');
+      default:
+        throw InvalidResponseError('Unable to reset password');
+    }
+  }
 
-  TaskEither<ValueError<String>, WSToken> login(
-          Username username, Password password) =>
+  Future<WSToken> login(
+    Username username,
+    Password password,
+  ) =>
       getWSToken(username, password);
 
-  TaskEither<ValueError<String>, http.Response> logOut(WSToken token) =>
-      TaskEither<ValueError<String>, http.Response>(
-        () async {
-          final response = await http.post(
-            Uri.parse("$baseUrl/login/logout.php"),
-            body: {
-              'wstoken': token.getOrCrash(),
-            },
-          );
-          if (response.statusCode == 200) {
-            return right(response);
-          } else {
-            return left(InvalidResponseError('Invalid token'));
-          }
-        },
-      );
+  Future<http.Response> logOut(WSToken token) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl${EndPoints.logout}"),
+      body: {
+        'wstoken': token.value,
+      },
+    );
+    switch (response.statusCode) {
+      case HttpStatus.ok:
+        return response;
+      case HttpStatus.unauthorized:
+        throw InvalidCredentialsError('Invalid username or password');
+      default:
+        throw InvalidResponseError('Unable to log out');
+    }
+  }
 }

@@ -7,6 +7,7 @@ environment:
   sdk: '>=2.19.0-444.4.beta <3.0.0'
 
 dependencies:
+  equatable: ^2.0.5
   fpdart: ^0.4.0
   http: ^0.13.5
   riverpod: ^2.1.3
