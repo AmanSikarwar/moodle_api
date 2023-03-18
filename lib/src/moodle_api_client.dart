@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../moodle_api.dart';
+import 'models/user_info.dart';
 
 class MoodleApiClient {
   final BaseUrl _baseUrl;
@@ -42,6 +43,32 @@ class MoodleApiClient {
           return siteInfo;
         } catch (e) {
           throw InvalidResponseError('Failed to parse site info');
+        }
+      case HttpStatus.unauthorized:
+        throw InvalidCredentialsError('Invalid username or password');
+      default:
+        throw InvalidResponseError('Unable to get user info');
+    }
+  }
+
+  Future<UserInfo> getUserInfo(Username username) async {
+    final response = await http.post(
+      Uri.parse('${_baseUrl.value}${EndPoints.apiEndpoint}'),
+      body: {
+        'wstoken': _token.value,
+        'wsfunction': WSFunctions.coreUserGetUsersByField,
+        'moodlewsrestformat': 'json',
+        'field': 'username',
+        'values[0]': username.value,
+      },
+    );
+    switch (response.statusCode) {
+      case HttpStatus.ok:
+        try {
+          final userInfo = UserInfo.fromJson(jsonDecode(response.body));
+          return userInfo;
+        } catch (e) {
+          throw InvalidResponseError('Failed to parse user info, $e');
         }
       case HttpStatus.unauthorized:
         throw InvalidCredentialsError('Invalid username or password');

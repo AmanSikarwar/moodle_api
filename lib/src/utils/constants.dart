@@ -29,6 +29,8 @@ class HttpStatus {
 class WSFunctions {
   const WSFunctions();
 
+  static const String coreUserGetUsersByField =
+      'core_user_get_users_by_field';
   static const String coreWebGetSiteInfo =
       'core_webservice_get_site_info';
   static const String coreAuthLogin = 'core_auth_login';

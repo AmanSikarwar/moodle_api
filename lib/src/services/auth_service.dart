@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:moodle_api/src/models/moodle_api_error.dart';
 
 import '../models/base_url.dart';
 import '../models/email.dart';
@@ -31,7 +32,9 @@ class MoodleAuthService {
           final token = WSToken.fromJson(jsonDecode(response.body));
           return token;
         } else {
-          throw InvalidResponseError('Unable to get token from server');
+          final error =
+              MoodleApiError.fromJson(jsonDecode(response.body));
+          throw InvalidResponseError(error.error!);
         }
       case HttpStatus.unauthorized:
         throw InvalidCredentialsError('Invalid username or password');

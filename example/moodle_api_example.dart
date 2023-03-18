@@ -10,7 +10,10 @@ void main() async {
   if (token.isValid) {
     final client =
         MoodleApiClient(baseUrl: BaseUrl(secret.baseUrl), token: token);
-    final response = await client.getSiteInfo();
-    print(response.sitename);
+    final siteInfo = await client.getSiteInfo();
+    print(siteInfo.sitename);
+    final userInfo =
+        await client.getUserInfo(Username(siteInfo.username!));
+    print(userInfo);
   }
 }
